@@ -1,0 +1,125 @@
+#include "Shutdown.h"
+
+void resetFaults()
+{
+	/* Resets the Processor-Controlled faults and pulls the reset line */
+
+	// Stop asserting FLT and FLT_NR
+	HAL_GPIO_WritePin(FLT_NR_GROUP, FLT_NR_PIN, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(FLT_GROUP, FLT_PIN, GPIO_PIN_RESET);
+	// Pull the reset line low
+	HAL_GPIO_WritePin(INTERLOCK_RESET_GROUP, INTERLOCK_RESET_PIN, GPIO_PIN_SET);
+}
+
+void displayFaultStatus()
+{
+	/* Sets the LEDs according to the current states of fault lines */
+
+	// IMD
+	if (IMDFaulted())
+	{
+		HAL_GPIO_WritePin(IMD_STATUS_GROUP, IMD_STATUS_PIN, GPIO_PIN_SET);
+	}
+	else
+	{
+		HAL_GPIO_WritePin(IMD_STATUS_GROUP, IMD_STATUS_PIN, GPIO_PIN_RESET);
+	}
+
+	// BSPD
+	if (BSPDFaulted())
+	{
+		HAL_GPIO_WritePin(BSPD_STATUS_GROUP, BSPD_STATUS_PIN, GPIO_PIN_SET);
+	}
+	else
+	{
+		HAL_GPIO_WritePin(BSPD_STATUS_GROUP, BSPD_STATUS_PIN, GPIO_PIN_RESET);
+	}
+
+	// AMS
+	if (AMSFaulted())
+	{
+		HAL_GPIO_WritePin(AMS_STATUS_GROUP, AMS_STATUS_PIN, GPIO_PIN_SET);
+	}
+	else
+	{
+		HAL_GPIO_WritePin(AMS_STATUS_GROUP, AMS_STATUS_PIN, GPIO_PIN_RESET);
+	}
+
+	// FLT_NR
+	if (FLT_NRFaulted())
+	{
+		HAL_GPIO_WritePin(FLT_NR_STATUS_GROUP, FLT_NR_STATUS_PIN, GPIO_PIN_SET);
+	}
+	else
+	{
+		HAL_GPIO_WritePin(FLT_NR_STATUS_GROUP, FLT_NR_STATUS_PIN, GPIO_PIN_RESET);
+	}
+
+	// FLT
+	if (FLTFaulted())
+	{
+		HAL_GPIO_WritePin(FLT_STATUS_GROUP, FLT_STATUS_PIN, GPIO_PIN_SET);
+	}
+	else
+	{
+		HAL_GPIO_WritePin(FLT_STATUS_GROUP, FLT_STATUS_PIN, GPIO_PIN_RESET);
+	}
+
+	// Interlock In
+	if (Interlock_InFaulted())
+	{
+		HAL_GPIO_WritePin(INTERLOCK_IN_STATUS_GROUP, INTERLOCK_IN_STATUS_PIN, GPIO_PIN_SET);
+	}
+	else
+	{
+		HAL_GPIO_WritePin(INTERLOCK_IN_STATUS_GROUP, INTERLOCK_IN_STATUS_PIN, GPIO_PIN_RESET);
+	}
+}
+
+void assertFLT()
+{
+	// Asserts the FLT line low
+	HAL_GPIO_WritePin(FLT_GROUP, FLT_PIN, GPIO_PIN_SET);
+}
+
+void assertFLT_NR()
+{
+	// Asserts the FLT_NR line low
+	HAL_GPIO_WritePin(FLT_NR_GROUP, FLT_NR_PIN, GPIO_PIN_SET);
+}
+
+int IMDFaulted()
+{
+	// Returns true if the IMD is faulted
+	return (!(HAL_GPIO_ReadPin(IMD_OBSERVE_GROUP, IMD_OBSERVE_PIN)));
+}
+
+int BSPDFaulted()
+{
+	// Returns true if the BSPD is faulted
+	return (!(HAL_GPIO_ReadPin(BSPD_OBSERVE_GROUP, BSPD_OBSERVE_PIN)));
+}
+
+int AMSFaulted()
+{
+	// Returns true if the AMS is faulted
+	return (!(HAL_GPIO_ReadPin(AMS_OBSERVE_GROUP, AMS_OBSERVE_PIN)));
+}
+
+int FLTFaulted()
+{
+	// Returns true if the FLT line is faulted
+	return (!(HAL_GPIO_ReadPin(FLT_OBSERVE_GROUP, FLT_OBSERVE_PIN)));
+}
+
+int FLT_NRFaulted()
+{
+	// Returns true if the FLT_NR line is faulted
+	return (!(HAL_GPIO_ReadPin(FLT_NR_OBSERVE_GROUP, FLT_NR_OBSERVE_PIN)));
+}
+
+int Interlock_InFaulted()
+{
+	// Returns true if the FLT_NR line is faulted
+	return (!(HAL_GPIO_ReadPin(INTERLOCK_IN_OBSERVE_GROUP, INTERLOCK_IN_OBSERVE_PIN)));
+}

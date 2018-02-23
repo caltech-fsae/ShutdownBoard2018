@@ -43,7 +43,9 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "mycan.h"
+#include "scheduler.h"
+#include "Shutdown.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -104,7 +106,14 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
+	  resetFaults();
+	  displayFaultStatus();
+	  HAL_Delay(100);
+	  HAL_GPIO_WritePin(INTERLOCK_RESET_GROUP, INTERLOCK_RESET_PIN, GPIO_PIN_RESET);
+	  HAL_Delay(500);
+	  assertFLT();
+	  displayFaultStatus();
+	  HAL_Delay(500);
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
