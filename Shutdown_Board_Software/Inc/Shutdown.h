@@ -54,6 +54,9 @@
 
 // Function Prototypes----------------------------------------
 
+void initTimer();
+void enableTimerInterrupt();
+void TIM2_IRQHandler();
 void resetFaults();
 void displayFaultStatus();
 void assertFLT();

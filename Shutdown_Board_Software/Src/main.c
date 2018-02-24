@@ -106,6 +106,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  enableTimerInterrupt();
 	  resetFaults();
 	  displayFaultStatus();
 	  HAL_Delay(100);
