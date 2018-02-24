@@ -9,6 +9,7 @@ void resetFaults()
 	HAL_GPIO_WritePin(FLT_GROUP, FLT_PIN, GPIO_PIN_RESET);
 	// Pull the reset line low
 	HAL_GPIO_WritePin(INTERLOCK_RESET_GROUP, INTERLOCK_RESET_PIN, GPIO_PIN_SET);
+	HAL_TIM_Base_Start_IT(&htim3);
 }
 
 void displayFaultStatus()

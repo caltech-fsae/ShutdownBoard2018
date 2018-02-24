@@ -40,6 +40,7 @@
 #include "stm32f4xx_hal.h"
 #include "adc.h"
 #include "can.h"
+#include "tim.h"
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
@@ -65,6 +66,15 @@ void SystemClock_Config(void);
 
 /* USER CODE BEGIN 0 */
 uint16_t adc;
+
+// Timer callback function
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if (htim->Instance==TIM3) // Reset back high after 50ms
+	{
+		HAL_GPIO_WritePin(INTERLOCK_RESET_GROUP, INTERLOCK_RESET_PIN, GPIO_PIN_RESET);
+	}
+}
 /* USER CODE END 0 */
 
 /**
@@ -98,6 +108,7 @@ int main(void)
   MX_GPIO_Init();
   MX_CAN1_Init();
   MX_ADC1_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -108,8 +119,6 @@ int main(void)
   {
 	  resetFaults();
 	  displayFaultStatus();
-	  HAL_Delay(100);
-	  HAL_GPIO_WritePin(INTERLOCK_RESET_GROUP, INTERLOCK_RESET_PIN, GPIO_PIN_RESET);
 	  HAL_Delay(500);
 	  assertFLT();
 	  displayFaultStatus();

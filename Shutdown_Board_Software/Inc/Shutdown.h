@@ -3,6 +3,7 @@
 
 #include "stm32f4xx_hal.h"
 #include "adc.h"
+#include "tim.h"
 
 #define AMS_STATUS_PIN              GPIO_PIN_1
 #define AMS_STATUS_GROUP            GPIOA
