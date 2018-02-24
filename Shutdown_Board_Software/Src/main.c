@@ -64,7 +64,7 @@ void SystemClock_Config(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-
+uint16_t adc;
 /* USER CODE END 0 */
 
 /**
@@ -114,6 +114,13 @@ int main(void)
 	  assertFLT();
 	  displayFaultStatus();
 	  HAL_Delay(500);
+
+	  adc = ADC1_read();
+	  if (adc == 0xFFFF)
+	  {
+		  return 0;
+	  }
+
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */

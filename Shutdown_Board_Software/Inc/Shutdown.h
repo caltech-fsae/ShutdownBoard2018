@@ -2,6 +2,7 @@
 #define SHUTDOWN_H_
 
 #include "stm32f4xx_hal.h"
+#include "adc.h"
 
 #define AMS_STATUS_PIN              GPIO_PIN_1
 #define AMS_STATUS_GROUP            GPIOA
@@ -51,8 +52,6 @@
 #define FLT_NR_PIN                  GPIO_PIN_15
 #define FLT_NR_GROUP                GPIOE
 
-#endif // SHUTDOWN_H_
-
 // Function Prototypes----------------------------------------
 
 void resetFaults();
@@ -65,3 +64,6 @@ int AMSFaulted();
 int FLTFaulted();
 int FLT_NRFaulted();
 int Interlock_InFaulted();
+uint16_t ADC1_read();
+
+#endif // SHUTDOWN_H_

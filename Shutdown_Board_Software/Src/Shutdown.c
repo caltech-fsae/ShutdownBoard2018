@@ -76,6 +76,25 @@ void displayFaultStatus()
 	}
 }
 
+uint16_t ADC1_read()
+{
+	/* Samples the ADC1 and returns the value as a uint16_t. Returns FFFF if error */
+	/* Must configure "End of Conversion Selection" to
+	 * "EOC flag at the end of all conversions" in CubeMX (ADC1 menu) */
+
+	uint16_t ok;
+	uint16_t adc_value = 0xFFFF;
+	HAL_ADC_Start(&hadc1);
+	ok = HAL_ADC_PollForConversion(&hadc1, 1000000);
+	if (ok == HAL_OK)
+	{
+		adc_value = HAL_ADC_GetValue(&hadc1);
+	}
+	HAL_ADC_Stop(&hadc1);
+
+	return adc_value;
+}
+
 void assertFLT()
 {
 	// Asserts the FLT line low
