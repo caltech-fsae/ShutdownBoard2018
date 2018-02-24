@@ -1,5 +1,40 @@
 #include "Shutdown.h"
 
+
+void initTimer(uint16_t ms)
+{
+	TIM_TimeBaseInitTypeDef timerInitStructure;
+	timerInitStructure.TIM_Prescaler = 40000;
+	timerInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
+	timerInitStructure.TIM_Period = 50;
+	timerInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
+	timerInitStructure.TIM_RepetitionCounter = 0;
+	TIM_SelectOnePulseMode(TIM2, TIM_OPMode_Single);
+	TIM_TimeBaseInit(TIM2, &timerInitStructure);
+	TIM_Cmd(TIM2, ENABLE);
+	TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
+}
+
+void enableTimerInterrupt()
+{
+    NVIC_InitTypeDef nvicStructure;
+    nvicStructure.NVIC_IRQChannel = TIM2_IRQn;
+    nvicStructure.NVIC_IRQChannelPreemptionPriority = 0;
+    nvicStructure.NVIC_IRQChannelSubPriority = 1;
+    nvicStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&nvicStructure);
+}
+
+void TIM2_IRQHandler()
+{
+	if (TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET)
+	{
+		HAL_GPIO_TogglePin(IMD_STATUS_GROUP, IMD_STATUS_PIN);
+		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
+		//HAL_GPIO_WritePin(INTERLOCK_RESET_GROUP, INTERLOCK_RESET_PIN, GPIO_PIN_RESET);
+	}
+}
+
 void resetFaults()
 {
 	/* Resets the Processor-Controlled faults and pulls the reset line */
