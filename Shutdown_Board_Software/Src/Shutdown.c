@@ -1,5 +1,30 @@
 #include "Shutdown.h"
 
+// Global Variables
+uint16_t msg;
+can_msg_t can_msg;
+
+void mainloop()
+{
+	/* The main "thread" of shutdown board operation*/
+
+	// send CAN messages necessary
+	displayFaultStatus();
+	uint16_t lv_battery_fault = (uint16_t) LVBatteryFaulted();
+	uint16_t interlock_in_fault = (uint16_t) Interlock_InFaulted();
+	uint16_t flt_fault = (uint16_t) FLTFaulted();
+	uint16_t flt_nr_fault = (uint16_t) FLT_NRFaulted();
+	uint16_t imd_fault = (uint16_t) IMDFaulted();
+	uint16_t ams_fault = (uint16_t) AMSFaulted();
+	uint16_t bspd_fault = (uint16_t) BSPDFaulted();
+	msg = (lv_battery_fault << 6) | (interlock_in_fault << 5) | (flt_fault << 4) |
+		  (flt_nr_fault << 3) | (imd_fault << 2) | (ams_fault << 1) |
+		  (bspd_fault);
+	CAN_short_msg(&can_msg, create_ID(BID_SHUTDOWN, MID_FAULT_STATUS), msg);
+	CAN_queue_transmit(&can_msg);
+
+}
+
 void resetFaults()
 {
 	/* Resets the Processor-Controlled faults and pulls the reset line */
@@ -142,4 +167,19 @@ int Interlock_InFaulted()
 {
 	// Returns true if the FLT_NR line is faulted
 	return (!(HAL_GPIO_ReadPin(INTERLOCK_IN_OBSERVE_GROUP, INTERLOCK_IN_OBSERVE_PIN)));
+}
+
+int LVBatteryFaulted()
+{
+	float battery_voltage = 0;
+	uint16_t adc_value = ADC1_read();
+	battery_voltage = ((float)adc_value)/((float)0xFFF) * 3.3;
+	if (battery_voltage < LV_BATTERY_THRESHOLD)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
 }

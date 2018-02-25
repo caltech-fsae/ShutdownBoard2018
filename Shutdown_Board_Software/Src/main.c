@@ -44,7 +44,6 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-#include "mycan.h"
 #include "scheduler.h"
 #include "Shutdown.h"
 /* USER CODE END Includes */
@@ -70,11 +69,12 @@ uint16_t adc;
 // Timer callback function
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	if (htim->Instance==TIM3) // Reset back high after 50ms
+	if (htim->Instance==TIM3) // Reset back high after 100ms
 	{
 		HAL_GPIO_WritePin(INTERLOCK_RESET_GROUP, INTERLOCK_RESET_PIN, GPIO_PIN_RESET);
 	}
 }
+
 /* USER CODE END 0 */
 
 /**
@@ -110,28 +110,15 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-
+  Init_MyCAN();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  resetFaults();
-	  displayFaultStatus();
-	  HAL_Delay(2000);
-	  assertFLT();
-	  displayFaultStatus();
-
-
-	  adc = ADC1_read();
-	  if (adc < 0x7FF)
-	  {
-		  assertFLT_NR();
-		  displayFaultStatus();
-	  }
-	  HAL_Delay(2000);
-
+	  mainloop();
+	  HAL_Delay(100);
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */

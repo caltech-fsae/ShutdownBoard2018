@@ -4,6 +4,9 @@
 #include "stm32f4xx_hal.h"
 #include "adc.h"
 #include "tim.h"
+#include "can.h"
+#include "identifiers.h"
+#include "mycan.h"
 
 #define AMS_STATUS_PIN              GPIO_PIN_1
 #define AMS_STATUS_GROUP            GPIOA
@@ -53,6 +56,8 @@
 #define FLT_NR_PIN                  GPIO_PIN_15
 #define FLT_NR_GROUP                GPIOE
 
+#define LV_BATTERY_THRESHOLD		17
+
 // Function Prototypes----------------------------------------
 
 void resetFaults();
@@ -65,6 +70,10 @@ int AMSFaulted();
 int FLTFaulted();
 int FLT_NRFaulted();
 int Interlock_InFaulted();
+int LVBatteryFaulted();
 uint16_t ADC1_read();
+
+void mainloop();
+void checkCANMessages();
 
 #endif // SHUTDOWN_H_
