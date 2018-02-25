@@ -117,19 +117,20 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  enableTimerInterrupt();
 	  resetFaults();
 	  displayFaultStatus();
-	  HAL_Delay(500);
+	  HAL_Delay(2000);
 	  assertFLT();
 	  displayFaultStatus();
-	  HAL_Delay(500);
+
 
 	  adc = ADC1_read();
-	  if (adc == 0xFFFF)
+	  if (adc < 0x7FF)
 	  {
-		  return 0;
+		  assertFLT_NR();
+		  displayFaultStatus();
 	  }
+	  HAL_Delay(2000);
 
   /* USER CODE END WHILE */
 
