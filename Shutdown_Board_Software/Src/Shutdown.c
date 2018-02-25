@@ -17,9 +17,9 @@ void mainloop()
 	uint16_t imd_fault = (uint16_t) IMDFaulted();
 	uint16_t ams_fault = (uint16_t) AMSFaulted();
 	uint16_t bspd_fault = (uint16_t) BSPDFaulted();
-	msg = (lv_battery_fault << 6) | (interlock_in_fault << 5) | (flt_fault << 4) |
+	msg = ((lv_battery_fault << 6) | (interlock_in_fault << 5) | (flt_fault << 4) |
 		  (flt_nr_fault << 3) | (imd_fault << 2) | (ams_fault << 1) |
-		  (bspd_fault);
+		  (bspd_fault));
 	CAN_short_msg(&can_msg, create_ID(BID_SHUTDOWN, MID_FAULT_STATUS), msg);
 	CAN_queue_transmit(&can_msg);
 
@@ -173,7 +173,7 @@ int LVBatteryFaulted()
 {
 	float battery_voltage = 0;
 	uint16_t adc_value = ADC1_read();
-	battery_voltage = ((float)adc_value)/((float)0xFFF) * 3.3;
+	battery_voltage = ((float)adc_value)/((float)0x7D0) * 3.3;
 	if (battery_voltage < LV_BATTERY_THRESHOLD)
 	{
 		return 1;

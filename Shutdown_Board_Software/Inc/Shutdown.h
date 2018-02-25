@@ -56,7 +56,7 @@
 #define FLT_NR_PIN                  GPIO_PIN_15
 #define FLT_NR_GROUP                GPIOE
 
-#define LV_BATTERY_THRESHOLD		17
+#define LV_BATTERY_THRESHOLD		3
 
 // Function Prototypes----------------------------------------
 
