@@ -8,6 +8,8 @@ void mainloop()
 {
 	/* The main "thread" of shutdown board operation*/
 
+
+
 	// send CAN messages necessary
 	displayFaultStatus();
 	uint16_t lv_battery_fault = (uint16_t) LVBatteryFaulted();

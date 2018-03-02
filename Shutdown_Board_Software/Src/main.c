@@ -115,10 +115,16 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+  Schedule schedule;
+  MakeSchedule(&schedule, 3);
+  AddTask(&schedule, &mainloop, 100);
+  AddTask(&schedule, &checkCanMessages, 1);
+
   while (1)
   {
-	  mainloop();
-	  HAL_Delay(100);
+	  RunSchedule(&schedule);
+
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
@@ -126,6 +132,7 @@ int main(void)
   }
   /* USER CODE END 3 */
 
+  DeleteSchedule(&schedule);
 }
 
 /**
