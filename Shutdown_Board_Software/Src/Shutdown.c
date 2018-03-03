@@ -25,27 +25,27 @@ void mainloop()
 
 
 	CAN_queue_transmit(&can_msg);
-
-	// set fault if receive faults from other boards over CAN
-
-	checkCanMessages();
 }
 
 void checkCANMessages()
 {
 	can_msg_t msg;
-	while(CAN_dequeue_msg(&msg)) {
+	if(CAN_dequeue_msg(&msg)) {
 		uint16_t type = 0b0000011111110000 & msg.identifier;
 
-		switch(type) {
-		case MID_FAULT_NR:
+		if(type == MID_FAULT_NR)
 			assertFLT_NR();
-			break;
-		case MID_FAULT:
+		else if(type == MID_FAULT)
 			assertFLT();
-			break;
-		}
+		displayFaultStatus();
 	}
+}
+
+void sendHeartbeat()
+{
+	can_msg_t msg;
+	CAN_short_msg(&msg, create_ID(BID_SHUTDOWN, MID_HEARTBEAT), 0);
+	CAN_queue_transmit(&msg);
 }
 
 void resetFaults()
