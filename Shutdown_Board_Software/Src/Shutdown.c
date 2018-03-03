@@ -43,6 +43,7 @@ void checkCANMessages()
 			break;
 		case MID_FAULT:
 			assertFLT();
+			break;
 		}
 	}
 }
