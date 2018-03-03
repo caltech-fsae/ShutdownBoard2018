@@ -119,7 +119,7 @@ int main(void)
   Schedule schedule;
   MakeSchedule(&schedule, 3);
   AddTask(&schedule, &mainloop, 100);
-  AddTask(&schedule, &checkCanMessages, 1);
+  AddTask(&schedule, &checkCANMessages, 1);
 
   while (1)
   {
@@ -132,7 +132,7 @@ int main(void)
   }
   /* USER CODE END 3 */
 
-  DeleteSchedule(&schedule);
+  DeleteSchedule(schedule);
 }
 
 /**
