@@ -28,6 +28,7 @@ void mainloop()
 
 	// set fault if receive faults from other boards over CAN
 
+	checkCanMessages();
 }
 
 void checkCANMessages()
@@ -35,6 +36,14 @@ void checkCANMessages()
 	can_msg_t msg;
 	while(CAN_dequeue_msg(&msg)) {
 		uint16_t type = 0b0000011111110000 & msg.identifier;
+
+		switch(type) {
+		case MID_FAULT_NR:
+			assertFLT_NR();
+			break;
+		case MID_FAULT:
+			assertFLT();
+		}
 	}
 }
 
