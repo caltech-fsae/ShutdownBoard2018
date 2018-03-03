@@ -75,5 +75,6 @@ uint16_t ADC1_read();
 
 void mainloop();
 void checkCANMessages();
+void sendHeartbeat();
 
 #endif // SHUTDOWN_H_
