@@ -74,6 +74,7 @@ int LVBatteryFaulted();
 uint16_t ADC1_read();
 
 void mainloop();
+void checkFaults();
 void checkCANMessages();
 void sendHeartbeat();
 
