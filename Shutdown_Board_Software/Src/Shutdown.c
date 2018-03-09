@@ -11,8 +11,15 @@ struct faults_t {
 	uint16_t bspd_fault;
 } faults;
 
+int core_timeout_counter;	// starts at CORE_BOARD_HEARTBEAT_TIMEOUT
+// reset every time core board heartbeat received
+// counts down to zero, then fault_nr asserted
+
 void mainloop()
 {
+	if(core_timeout_counter < 0)
+		assertFLT_NR();
+
 	checkFaults();			// Check for faults
 	displayFaultStatus();	// Display fault status on LEDS
 
@@ -57,13 +64,17 @@ void checkFaults()
 void checkCANMessages()
 {
 	can_msg_t msg;
-	if(CAN_dequeue_msg(&msg)) {
+	while(CAN_dequeue_msg(&msg)) {
 		uint16_t type = 0b0000011111110000 & msg.identifier;
-
+		uint16_t board = 0b00001111 & msg.identifier;
 		if(type == MID_FAULT_NR)
 			assertFLT_NR();
 		else if(type == MID_FAULT)
 			assertFLT();
+		else if(type == MID_HEARTBEAT) {
+			if(board == BID_CORE)
+				core_timeout_counter = CORE_BOARD_HEARTBEAT_TIMEOUT;
+		}
 		displayFaultStatus();
 	}
 }
@@ -79,10 +90,20 @@ void resetFaults()
 {
 	/* Resets the Processor-Controlled resettable fault and pulls the reset line */
 
-	// Stop asserting FLT
-	faults.flt_fault = 0x0;
+	// Stop asserting faults
+	faults.lv_battery_fault = 0;
+	faults.interlock_in_fault = 0;
+	faults.flt_fault = 0;
+	faults.flt_nr_fault = 0;
+	faults.imd_fault = 0;
+	faults.ams_fault = 0;
+	faults.bspd_fault = 0;
+
+	// Reset software-controlled faults
 	HAL_GPIO_WritePin(FLT_GROUP, FLT_PIN, GPIO_PIN_RESET);
-	// Pull the reset line low
+	HAL_GPIO_WritePin(FLT_GROUP, FLT_NR_PIN, GPIO_PIN_RESET);
+
+	// Pull the reset line low to reset hardware-controlled faults
 	HAL_GPIO_WritePin(INTERLOCK_RESET_GROUP, INTERLOCK_RESET_PIN, GPIO_PIN_SET);
 	HAL_TIM_Base_Start_IT(&htim3);
 }

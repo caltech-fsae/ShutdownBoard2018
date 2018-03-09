@@ -58,8 +58,11 @@
 
 #define LV_BATTERY_THRESHOLD		3
 
-// Function Prototypes----------------------------------------
+//# of cycles without heartbeat to trigger fault if no core board heartbeat
+//TODO: test to verify this number
+#define CORE_BOARD_HEARTBEAT_TIMEOUT 20
 
+// Function Prototypes----------------------------------------
 void resetFaults();
 void displayFaultStatus();
 void assertFLT();
