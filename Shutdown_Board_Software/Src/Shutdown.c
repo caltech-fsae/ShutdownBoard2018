@@ -35,18 +35,21 @@ void mainloop()
 	CAN_short_msg(&can_msg, create_ID(BID_SHUTDOWN, MID_FAULT_STATUS), msg);
 	CAN_queue_transmit(&can_msg);
 
-	if (faults.lv_battery_fault || faults.interlock_in_fault
-		|| faults.flt_nr_fault || faults.imd_fault
+	if (faults.lv_battery_fault || faults.interlock_in_fault || faults.imd_fault
 		|| faults.ams_fault || faults.bspd_fault) {
+		assertFLT_NR();
+	}
+
+	if (faults.flt_nr_fault) {
 		can_msg_t fault_msg;
 		CAN_short_msg(&fault_msg, create_ID(BID_SHUTDOWN, MID_FAULT_NR), 0);
 		CAN_queue_transmit(&fault_msg);
 	}
 
 	if (faults.flt_fault) {
-			can_msg_t fault_msg;
-			CAN_short_msg(&fault_msg, create_ID(BID_SHUTDOWN, MID_FAULT), 0);
-			CAN_queue_transmit(&fault_msg);
+		can_msg_t fault_msg;
+		CAN_short_msg(&fault_msg, create_ID(BID_SHUTDOWN, MID_FAULT), 0);
+		CAN_queue_transmit(&fault_msg);
 	}
 }
 
