@@ -77,6 +77,9 @@ void checkCANMessages()
 		else if(type == MID_HEARTBEAT) {
 			if(board == BID_CORE)
 				core_timeout_counter = CORE_BOARD_HEARTBEAT_TIMEOUT;
+		} else if(type == MID_RESET_FAULTS) {
+			if(board == BID_CORE)
+				resetFaults();
 		}
 		displayFaultStatus();
 	}
