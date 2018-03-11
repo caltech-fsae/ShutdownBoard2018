@@ -51,6 +51,7 @@ void mainloop()
 		CAN_short_msg(&fault_msg, create_ID(BID_SHUTDOWN, MID_FAULT), 0);
 		CAN_queue_transmit(&fault_msg);
 	}
+    core_timeout_counter--;
 }
 
 void checkFaults()
