@@ -11,14 +11,14 @@ struct faults_t {
 	uint16_t bspd_fault;
 } faults;
 
-int core_timeout_counter;	// starts at CORE_BOARD_HEARTBEAT_TIMEOUT
+int core_timeout_counter = CORE_BOARD_HEARTBEAT_TIMEOUT;	// starts at CORE_BOARD_HEARTBEAT_TIMEOUT
 // reset every time core board heartbeat received
 // counts down to zero, then fault_nr asserted
 
 void mainloop()
 {
 	if(core_timeout_counter < 0)
-		assertFLT_NR();
+//For testing:		assertFLT_NR();
 
 	checkFaults();			// Check for faults
 	displayFaultStatus();	// Display fault status on LEDS
@@ -56,7 +56,7 @@ void mainloop()
 
 void checkFaults()
 {
-	faults.lv_battery_fault = (uint16_t) LVBatteryFaulted();
+	faults.lv_battery_fault = 0; // <- For Testing (uint16_t) LVBatteryFaulted();
 	faults.interlock_in_fault = (uint16_t) Interlock_InFaulted();
 	faults.flt_fault = (uint16_t) FLTFaulted();
 	faults.flt_nr_fault = (uint16_t) FLT_NRFaulted();

@@ -60,7 +60,7 @@
 
 //# of cycles without heartbeat to trigger fault if no core board heartbeat
 //TODO: test to verify this number
-#define CORE_BOARD_HEARTBEAT_TIMEOUT 20
+#define CORE_BOARD_HEARTBEAT_TIMEOUT 2000
 
 // Function Prototypes----------------------------------------
 void resetFaults();
