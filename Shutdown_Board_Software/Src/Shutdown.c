@@ -17,8 +17,9 @@ int core_timeout_counter = CORE_BOARD_HEARTBEAT_TIMEOUT;	// starts at CORE_BOARD
 
 void mainloop()
 {
-	if(core_timeout_counter < 0)
-//For testing:		assertFLT_NR();
+	if(core_timeout_counter < 0) {
+		assertFLT_NR();
+	}
 
 	checkFaults();			// Check for faults
 	displayFaultStatus();	// Display fault status on LEDS
