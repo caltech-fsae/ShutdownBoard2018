@@ -18,7 +18,7 @@ int core_timeout_counter = CORE_BOARD_HEARTBEAT_TIMEOUT;	// starts at CORE_BOARD
 void mainloop()
 {
 	if(core_timeout_counter < 0) {
-		assertFLT_NR();
+		//assertFLT_NR();
 	}
 
 	checkFaults();			// Check for faults
@@ -74,8 +74,6 @@ void checkCANMessages()
 		uint16_t board = 0b00001111 & msg.identifier;
 		if(type == MID_FAULT_NR)
 			assertFLT_NR();
-		else if(type == MID_FAULT)
-			assertFLT();
 		else if(type == MID_HEARTBEAT) {
 			if(board == BID_CORE)
 				core_timeout_counter = CORE_BOARD_HEARTBEAT_TIMEOUT;
