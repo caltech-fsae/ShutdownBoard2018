@@ -111,7 +111,7 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   Init_MyCAN();
-  resetFaults();
+  init();
   /* USER CODE END 2 */
 
   /* Infinite loop */

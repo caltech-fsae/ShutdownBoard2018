@@ -11,16 +11,24 @@ struct faults_t {
 	uint16_t bspd_fault;
 } faults;
 
-int core_timeout_counter = CORE_BOARD_HEARTBEAT_TIMEOUT;	// starts at CORE_BOARD_HEARTBEAT_TIMEOUT
+int core_timeout_counter = CORE_BOARD_HEARTBEAT_STARTUP_TIMEOUT;	// starts at CORE_BOARD_HEARTBEAT_TIMEOUT
 // reset every time core board heartbeat received
 // counts down to zero, then fault_nr asserted
+
+int state = STATE_WAITING;		// Starting state: waiting for core board to come online
+
+void init() {
+	state = STATE_WAITING;
+	resetAllFaults();
+	assertFlt();
+	core_timeout_counter = CORE_BOARD_HEARTBEAT_STARTUP_TIMEOUT;
+}
 
 void mainloop()
 {
 	if(core_timeout_counter < 0) {
-		//assertFLT_NR();
+		assertFLT_NR();
 	}
-
 	checkFaults();			// Check for faults
 	displayFaultStatus();	// Display fault status on LEDS
 
@@ -52,7 +60,7 @@ void mainloop()
 		CAN_short_msg(&fault_msg, create_ID(BID_SHUTDOWN, MID_FAULT), 0);
 		CAN_queue_transmit(&fault_msg);
 	}
-    core_timeout_counter--;
+	core_timeout_counter--;
 }
 
 void checkFaults()
@@ -75,13 +83,14 @@ void checkCANMessages()
 		if(type == MID_FAULT_NR)
 			assertFLT_NR();
 		else if(type == MID_HEARTBEAT) {
-			if(board == BID_CORE)
+			if(board == BID_CORE) {
 				core_timeout_counter = CORE_BOARD_HEARTBEAT_TIMEOUT;
-		} else if(type == MID_RESET_FAULTS) {
-			if(board == BID_CORE)
-				resetFaults();
+				if(state == STATE_WAITING) {
+					resetFault();
+					state = STATE_ONLINE;
+				}
+			}
 		}
-		displayFaultStatus();
 	}
 }
 
@@ -92,7 +101,14 @@ void sendHeartbeat()
 	CAN_queue_transmit(&msg);
 }
 
-void resetFaults()
+void resetFault()
+{
+	// Reset software-controlled faults
+	HAL_GPIO_WritePin(FLT_GROUP, FLT_PIN, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(FLT_GROUP, FLT_NR_PIN, GPIO_PIN_RESET);
+}
+
+void resetAllFaults()
 {
 	/* Resets the Processor-Controlled resettable fault and pulls the reset line */
 
@@ -106,8 +122,7 @@ void resetFaults()
 	faults.bspd_fault = 0;
 
 	// Reset software-controlled faults
-	HAL_GPIO_WritePin(FLT_GROUP, FLT_PIN, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(FLT_GROUP, FLT_NR_PIN, GPIO_PIN_RESET);
+	resetFault();
 
 	// Pull the reset line low to reset hardware-controlled faults
 	HAL_GPIO_WritePin(INTERLOCK_RESET_GROUP, INTERLOCK_RESET_PIN, GPIO_PIN_SET);

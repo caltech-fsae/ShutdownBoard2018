@@ -61,9 +61,15 @@
 //# of cycles without heartbeat to trigger fault if no core board heartbeat
 //TODO: test to verify this number
 #define CORE_BOARD_HEARTBEAT_TIMEOUT 100
+#define CORE_BOARD_HEARTBEAT_STARTUP_TIMEOUT 200
+
+// Shutdown board states
+#define STATE_WAITING	0
+#define STATE_ONLINE	1
 
 // Function Prototypes----------------------------------------
-void resetFaults();
+void resetFault();
+void resetAllFaults();
 void displayFaultStatus();
 void assertFLT();
 void assertFLT_NR();
