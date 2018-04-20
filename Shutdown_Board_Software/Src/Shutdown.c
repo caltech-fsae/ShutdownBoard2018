@@ -20,14 +20,14 @@ int state = STATE_WAITING;		// Starting state: waiting for core board to come on
 void init() {
 	state = STATE_WAITING;
 	resetAllFaults();
-	assertFlt();
+	assertFLT();
 	core_timeout_counter = CORE_BOARD_HEARTBEAT_STARTUP_TIMEOUT;
 }
 
 void mainloop()
 {
 	if(core_timeout_counter < 0) {
-		assertFLT_NR();
+		//assertFLT_NR();
 	}
 	checkFaults();			// Check for faults
 	displayFaultStatus();	// Display fault status on LEDS
@@ -53,12 +53,14 @@ void mainloop()
 		can_msg_t fault_msg;
 		CAN_short_msg(&fault_msg, create_ID(BID_SHUTDOWN, MID_FAULT_NR), 0);
 		CAN_queue_transmit(&fault_msg);
+		assertFLT_NR();
 	}
 
 	if (faults.flt_fault) {
 		can_msg_t fault_msg;
 		CAN_short_msg(&fault_msg, create_ID(BID_SHUTDOWN, MID_FAULT), 0);
 		CAN_queue_transmit(&fault_msg);
+		assertFLT();
 	}
 	core_timeout_counter--;
 }
@@ -80,8 +82,9 @@ void checkCANMessages()
 	while(CAN_dequeue_msg(&msg)) {
 		uint16_t type = 0b0000011111110000 & msg.identifier;
 		uint16_t board = 0b00001111 & msg.identifier;
-		if(type == MID_FAULT_NR)
+		if(type == MID_FAULT_NR) {
 			assertFLT_NR();
+		}
 		else if(type == MID_HEARTBEAT) {
 			if(board == BID_CORE) {
 				core_timeout_counter = CORE_BOARD_HEARTBEAT_TIMEOUT;
@@ -103,6 +106,7 @@ void sendHeartbeat()
 
 void resetFault()
 {
+	faults.flt_fault = 0;
 	// Reset software-controlled faults
 	HAL_GPIO_WritePin(FLT_GROUP, FLT_PIN, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(FLT_GROUP, FLT_NR_PIN, GPIO_PIN_RESET);
@@ -115,7 +119,6 @@ void resetAllFaults()
 	// Stop asserting faults
 	faults.lv_battery_fault = 0;
 	faults.interlock_in_fault = 0;
-	faults.flt_fault = 0;
 	faults.flt_nr_fault = 0;
 	faults.imd_fault = 0;
 	faults.ams_fault = 0;
