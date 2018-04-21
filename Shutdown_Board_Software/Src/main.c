@@ -120,7 +120,7 @@ int main(void)
   MakeSchedule(&schedule, 3);
   AddTask(&schedule, &mainloop, 500);
   AddTask(&schedule, &checkCANMessages, 1);
-  AddTask(&schedule, &sendHeartbeat, 1000);
+  AddTask(&schedule, &sendHeartbeat, 700);
 
   while (1)
   {
