@@ -60,11 +60,28 @@
 
 //# of cycles without heartbeat to trigger fault if no core board heartbeat
 //TODO: test to verify this number
-#define CORE_BOARD_HEARTBEAT_TIMEOUT 20
+#define CORE_BOARD_HEARTBEAT_TIMEOUT 100
+#define CORE_BOARD_HEARTBEAT_STARTUP_TIMEOUT 200
+
+// Shutdown board states
+#define STATE_WAITING	0
+#define STATE_ONLINE	1
+
+// Fault status struct
+typedef struct faults_t {
+	uint16_t lv_battery_fault;	// set battery fault
+	uint16_t interlock_in_fault;
+	uint16_t flt_fault;
+	uint16_t flt_nr_fault;
+	uint16_t imd_fault;
+	uint16_t ams_fault;
+	uint16_t bspd_fault;
+} faults_t;
 
 // Function Prototypes----------------------------------------
-void resetFaults();
-void displayFaultStatus();
+void resetFault();
+void resetAllFaults();
+void displayFaultStatus(faults_t);
 void assertFLT();
 void assertFLT_NR();
 int IMDFaulted();
@@ -77,7 +94,7 @@ int LVBatteryFaulted();
 uint16_t ADC1_read();
 
 void mainloop();
-void checkFaults();
+faults_t checkFaults();
 void checkCANMessages();
 void sendHeartbeat();
 

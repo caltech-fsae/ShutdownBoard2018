@@ -1,27 +1,27 @@
 #include "Shutdown.h"
 
 // Global Variables
-struct faults_t {
-	uint16_t lv_battery_fault;	// set battery fault
-	uint16_t interlock_in_fault;
-	uint16_t flt_fault;
-	uint16_t flt_nr_fault;
-	uint16_t imd_fault;
-	uint16_t ams_fault;
-	uint16_t bspd_fault;
-} faults;
 
-int core_timeout_counter;	// starts at CORE_BOARD_HEARTBEAT_TIMEOUT
+int core_timeout_counter = CORE_BOARD_HEARTBEAT_STARTUP_TIMEOUT;	// starts at CORE_BOARD_HEARTBEAT_TIMEOUT
 // reset every time core board heartbeat received
 // counts down to zero, then fault_nr asserted
 
+int state = STATE_WAITING;		// Starting state: waiting for core board to come online
+
+void init() {
+	state = STATE_WAITING;
+	resetAllFaults();
+	HAL_GPIO_WritePin(FLT_GROUP, FLT_PIN, GPIO_PIN_SET);
+	core_timeout_counter = CORE_BOARD_HEARTBEAT_STARTUP_TIMEOUT;
+}
+
 void mainloop()
 {
-	if(core_timeout_counter < 0)
+	if(core_timeout_counter < 0) {
 		assertFLT_NR();
-
-	checkFaults();			// Check for faults
-	displayFaultStatus();	// Display fault status on LEDS
+	}
+	faults_t faults = checkFaults();			// Check for faults
+	displayFaultStatus(faults);	// Display fault status on LEDS
 
 	// Send fault status message out on CAN
 	uint16_t msg =	  ((faults.lv_battery_fault << 6)
@@ -44,6 +44,7 @@ void mainloop()
 		can_msg_t fault_msg;
 		CAN_short_msg(&fault_msg, create_ID(BID_SHUTDOWN, MID_FAULT_NR), 0);
 		CAN_queue_transmit(&fault_msg);
+		assertFLT_NR();
 	}
 
 	if (faults.flt_fault) {
@@ -51,17 +52,20 @@ void mainloop()
 		CAN_short_msg(&fault_msg, create_ID(BID_SHUTDOWN, MID_FAULT), 0);
 		CAN_queue_transmit(&fault_msg);
 	}
+	core_timeout_counter--;
 }
 
-void checkFaults()
+faults_t checkFaults()
 {
-	faults.lv_battery_fault = (uint16_t) LVBatteryFaulted();
+	faults_t faults;
+	faults.lv_battery_fault = 0; // <- For Testing (uint16_t) LVBatteryFaulted();
 	faults.interlock_in_fault = (uint16_t) Interlock_InFaulted();
 	faults.flt_fault = (uint16_t) FLTFaulted();
 	faults.flt_nr_fault = (uint16_t) FLT_NRFaulted();
 	faults.imd_fault = (uint16_t) IMDFaulted();
 	faults.ams_fault = (uint16_t) AMSFaulted();
 	faults.bspd_fault = (uint16_t) BSPDFaulted();
+	return faults;
 }
 
 void checkCANMessages()
@@ -70,18 +74,18 @@ void checkCANMessages()
 	while(CAN_dequeue_msg(&msg)) {
 		uint16_t type = 0b0000011111110000 & msg.identifier;
 		uint16_t board = 0b00001111 & msg.identifier;
-		if(type == MID_FAULT_NR)
+		if(type == MID_FAULT_NR) {
 			assertFLT_NR();
-		else if(type == MID_FAULT)
-			assertFLT();
-		else if(type == MID_HEARTBEAT) {
-			if(board == BID_CORE)
-				core_timeout_counter = CORE_BOARD_HEARTBEAT_TIMEOUT;
-		} else if(type == MID_RESET_FAULTS) {
-			if(board == BID_CORE)
-				resetFaults();
 		}
-		displayFaultStatus();
+		else if(type == MID_HEARTBEAT) {
+			if(board == BID_CORE) {
+				core_timeout_counter = CORE_BOARD_HEARTBEAT_TIMEOUT;
+				if(state == STATE_WAITING) {
+					resetFault();
+					state = STATE_ONLINE;
+				}
+			}
+		}
 	}
 }
 
@@ -92,32 +96,25 @@ void sendHeartbeat()
 	CAN_queue_transmit(&msg);
 }
 
-void resetFaults()
+void resetFault()
 {
-	/* Resets the Processor-Controlled resettable fault and pulls the reset line */
-
-	// Stop asserting faults
-	faults.lv_battery_fault = 0;
-	faults.interlock_in_fault = 0;
-	faults.flt_fault = 0;
-	faults.flt_nr_fault = 0;
-	faults.imd_fault = 0;
-	faults.ams_fault = 0;
-	faults.bspd_fault = 0;
-
-	// Reset software-controlled faults
+	// Reset resettable fault
 	HAL_GPIO_WritePin(FLT_GROUP, FLT_PIN, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(FLT_GROUP, FLT_NR_PIN, GPIO_PIN_RESET);
+}
 
-	// Pull the reset line low to reset hardware-controlled faults
+void resetAllFaults()
+{
+	// Reset resettable faults
+	resetFault();
+	// Reset non-resettable faults
 	HAL_GPIO_WritePin(INTERLOCK_RESET_GROUP, INTERLOCK_RESET_PIN, GPIO_PIN_SET);
 	HAL_TIM_Base_Start_IT(&htim3);
 }
 
-void displayFaultStatus()
+void displayFaultStatus(faults_t faults)
 {
 	/* Sets the LEDs according to the current states of fault lines */
-
 	if (faults.imd_fault) // IMD
 		HAL_GPIO_WritePin(IMD_STATUS_GROUP, IMD_STATUS_PIN, GPIO_PIN_SET);
 	else
@@ -172,14 +169,12 @@ void assertFLT()
 {
 	// Asserts the FLT line low
 	HAL_GPIO_WritePin(FLT_GROUP, FLT_PIN, GPIO_PIN_SET);
-	faults.flt_fault = 0x1;
 }
 
 void assertFLT_NR()
 {
 	// Asserts the FLT_NR line low
 	HAL_GPIO_WritePin(FLT_NR_GROUP, FLT_NR_PIN, GPIO_PIN_SET);
-	faults.flt_nr_fault = 0x1;
 }
 
 int IMDFaulted()

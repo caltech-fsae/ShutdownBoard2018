@@ -111,17 +111,16 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   Init_MyCAN();
-  resetFaults();
-  core_timeout_counter = CORE_BOARD_HEARTBEAT_TIMEOUT;
+  init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   Schedule schedule;
   MakeSchedule(&schedule, 3);
-  AddTask(&schedule, &mainloop, 100);
+  AddTask(&schedule, &mainloop, 500);
   AddTask(&schedule, &checkCANMessages, 1);
-  AddTask(&schedule, &sendHeartbeat, 100);
+  AddTask(&schedule, &sendHeartbeat, 700);
 
   while (1)
   {
