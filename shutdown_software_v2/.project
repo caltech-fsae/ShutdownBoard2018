@@ -71,6 +71,15 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
 	<linkedResources>
-		
+		<link>
+			<name>common_inc</name>
+			<type>2</type>
+			<location>$%7BPARENT-2-PROJECT_LOC%7D/2018CommonSW/inc</location>
+		</link>
+		<link>
+			<name>common_src</name>
+			<type>2</type>
+			<location>$%7BPARENT-2-PROJECT_LOC%7D/2018CommonSW/src</location>
+		</link>
 	</linkedResources>
 </projectDescription>

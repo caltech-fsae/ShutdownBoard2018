@@ -77,10 +77,10 @@
 #define FLT_Observe_GPIO_Port GPIOE
 #define Interlock_In_Observe_Pin GPIO_PIN_13
 #define Interlock_In_Observe_GPIO_Port GPIOE
-#define FLT_Pin GPIO_PIN_14
-#define FLT_GPIO_Port GPIOE
-#define FLT_NR_Pin GPIO_PIN_15
-#define FLT_NR_GPIO_Port GPIOE
+#define FLT_Pin GPIO_PIN_12
+#define FLT_GPIO_Port GPIOB
+#define FLT_NR_Pin GPIO_PIN_13
+#define FLT_NR_GPIO_Port GPIOB
 
 /* ########################## Assert Selection ############################## */
 /**

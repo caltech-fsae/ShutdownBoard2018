@@ -50,11 +50,11 @@
 #define INTERLOCK_IN_OBSERVE_PIN    GPIO_PIN_13
 #define INTERLOCK_IN_OBSERVE_GROUP  GPIOE
 
-#define FLT_PIN                     GPIO_PIN_14
-#define FLT_GROUP                   GPIOE
+#define FLT_PIN                     GPIO_PIN_12
+#define FLT_GROUP                   GPIOB
 
-#define FLT_NR_PIN                  GPIO_PIN_15
-#define FLT_NR_GROUP                GPIOE
+#define FLT_NR_PIN                  GPIO_PIN_13
+#define FLT_NR_GROUP                GPIOB
 
 #define LV_BATTERY_THRESHOLD		3
 
@@ -92,6 +92,7 @@ int FLT_NRFaulted();
 int Interlock_InFaulted();
 int LVBatteryFaulted();
 uint16_t ADC1_read();
+void init();
 
 void mainloop();
 faults_t checkFaults();
