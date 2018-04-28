@@ -174,48 +174,48 @@ void assertFLT()
 void assertFLT_NR()
 {
 	// Asserts the FLT_NR line low
-	HAL_GPIO_WritePin(FLT_NR_GROUP, FLT_NR_PIN, GPIO_PIN_SET);
+	//HAL_GPIO_WritePin(FLT_NR_GROUP, FLT_NR_PIN, GPIO_PIN_SET);
 }
 
 int IMDFaulted()
 {
 	// IMD fault is H/W
 	// Returns true if the IMD is faulted
-	return (!(HAL_GPIO_ReadPin(IMD_OBSERVE_GROUP, IMD_OBSERVE_PIN)));
+	return ((HAL_GPIO_ReadPin(IMD_OBSERVE_GROUP, IMD_OBSERVE_PIN)));
 }
 
 int BSPDFaulted()
 {
 	// HW fault
 	// Returns true if the BSPD is faulted
-	return (!(HAL_GPIO_ReadPin(BSPD_OBSERVE_GROUP, BSPD_OBSERVE_PIN)));
+	return ((HAL_GPIO_ReadPin(BSPD_OBSERVE_GROUP, BSPD_OBSERVE_PIN)));
 }
 
 int AMSFaulted()
 {
 	// HW fault
 	// Returns true if the AMS is faulted
-	return (!(HAL_GPIO_ReadPin(AMS_OBSERVE_GROUP, AMS_OBSERVE_PIN)));
+	return ((HAL_GPIO_ReadPin(AMS_OBSERVE_GROUP, AMS_OBSERVE_PIN)));
 }
 
 int FLTFaulted()
 {
 	// HW fault
 	// Returns true if the FLT line is faulted
-	return (!(HAL_GPIO_ReadPin(FLT_OBSERVE_GROUP, FLT_OBSERVE_PIN)));
+	return ((HAL_GPIO_ReadPin(FLT_OBSERVE_GROUP, FLT_OBSERVE_PIN)));
 }
 
 int FLT_NRFaulted()
 {
 	// HW fault
 	// Returns true if the FLT_NR line is faulted
-	return (!(HAL_GPIO_ReadPin(FLT_NR_OBSERVE_GROUP, FLT_NR_OBSERVE_PIN)));
+	return ((HAL_GPIO_ReadPin(FLT_NR_OBSERVE_GROUP, FLT_NR_OBSERVE_PIN)));
 }
 
 int Interlock_InFaulted()
 {
 	// Returns true if the FLT_NR line is faulted
-	return (!(HAL_GPIO_ReadPin(INTERLOCK_IN_OBSERVE_GROUP, INTERLOCK_IN_OBSERVE_PIN)));
+	return ((HAL_GPIO_ReadPin(INTERLOCK_IN_OBSERVE_GROUP, INTERLOCK_IN_OBSERVE_PIN)));
 }
 
 int LVBatteryFaulted()
