@@ -215,7 +215,7 @@ int FLT_NRFaulted()
 int Interlock_InFaulted()
 {
 	// Returns true if the FLT_NR line is faulted
-	return ((HAL_GPIO_ReadPin(INTERLOCK_IN_OBSERVE_GROUP, INTERLOCK_IN_OBSERVE_PIN)));
+	return (!(HAL_GPIO_ReadPin(INTERLOCK_IN_OBSERVE_GROUP, INTERLOCK_IN_OBSERVE_PIN)));
 }
 
 int LVBatteryFaulted()
