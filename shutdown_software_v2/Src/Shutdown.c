@@ -2,22 +2,19 @@
 
 // Global Variables
 
-int core_timeout_counter = CORE_BOARD_HEARTBEAT_STARTUP_TIMEOUT;	// starts at CORE_BOARD_HEARTBEAT_TIMEOUT
+int core_timeout_counter;
 // reset every time core board heartbeat received
 // counts down to zero, then fault_nr asserted
 
-int state = STATE_WAITING;		// Starting state: waiting for core board to come online
-
 void init() {
-	state = STATE_WAITING;
 	resetAllFaults();
-	HAL_GPIO_WritePin(FLT_GROUP, FLT_PIN, GPIO_PIN_SET);
-	core_timeout_counter = CORE_BOARD_HEARTBEAT_STARTUP_TIMEOUT;
+	HAL_GPIO_WritePin(FLT_GROUP, FLT_PIN, GPIO_PIN_RESET);
+	core_timeout_counter = CORE_BOARD_HEARTBEAT_TIMEOUT;
 }
 
 void mainloop()
 {
-	if(core_timeout_counter < 0) {
+	if(core_timeout_counter <= 0) {
 		assertFLT_NR();
 	}
 	faults_t faults = checkFaults();			// Check for faults
@@ -58,13 +55,25 @@ void mainloop()
 faults_t checkFaults()
 {
 	faults_t faults;
-	faults.lv_battery_fault = 0; // <- For Testing (uint16_t) LVBatteryFaulted();
-	faults.interlock_in_fault = (uint16_t) Interlock_InFaulted();
-	faults.flt_fault = (uint16_t) FLTFaulted();
-	faults.flt_nr_fault = (uint16_t) FLT_NRFaulted();
-	faults.imd_fault = (uint16_t) IMDFaulted();
-	faults.ams_fault = (uint16_t) AMSFaulted();
-	faults.bspd_fault = (uint16_t) BSPDFaulted();
+	if (HAL_GetTick() > STARTUP_GRACE_PERIOD){
+		faults.lv_battery_fault = 0; // <- For Testing (uint16_t) LVBatteryFaulted();
+		faults.interlock_in_fault = 	((uint16_t) Interlock_InFaulted());
+		faults.flt_fault = 				((uint16_t) FLTFaulted());
+		faults.flt_nr_fault = 			((uint16_t) FLT_NRFaulted());
+		faults.imd_fault = 				((uint16_t) IMDFaulted());
+		faults.ams_fault = 				((uint16_t) AMSFaulted());
+		faults.bspd_fault = 			((uint16_t) BSPDFaulted());
+	}
+	else
+	{
+		faults.lv_battery_fault = 0;
+		faults.interlock_in_fault = 0;
+		faults.flt_fault = 0;
+		faults.flt_nr_fault = 0;
+		faults.imd_fault = 0;
+		faults.ams_fault = 0;
+		faults.bspd_fault = 0;
+	}
 	return faults;
 }
 
@@ -80,10 +89,19 @@ void checkCANMessages()
 		else if(type == MID_HEARTBEAT) {
 			if(board == BID_CORE) {
 				core_timeout_counter = CORE_BOARD_HEARTBEAT_TIMEOUT;
-				if(state == STATE_WAITING) {
-					resetFault();
-					state = STATE_ONLINE;
-				}
+			}
+		}
+		else if(type == MID_CAR_STATE)
+		{
+			uint16_t payload = CAN_decode_short(&msg);
+			if(payload == 4)
+			{
+				HAL_GPIO_WritePin(FLT_STATUS_GROUP, FLT_STATUS_PIN, GPIO_PIN_SET);
+			}
+			else
+			{
+				resetFault();
+				HAL_GPIO_WritePin(FLT_STATUS_GROUP, FLT_STATUS_PIN, GPIO_PIN_RESET);
 			}
 		}
 	}
@@ -100,7 +118,6 @@ void resetFault()
 {
 	// Reset resettable fault
 	HAL_GPIO_WritePin(FLT_GROUP, FLT_PIN, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(FLT_GROUP, FLT_NR_PIN, GPIO_PIN_RESET);
 }
 
 void resetAllFaults()
@@ -108,6 +125,7 @@ void resetAllFaults()
 	// Reset resettable faults
 	resetFault();
 	// Reset non-resettable faults
+	HAL_GPIO_WritePin(FLT_NR_GROUP, FLT_NR_PIN, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(INTERLOCK_RESET_GROUP, INTERLOCK_RESET_PIN, GPIO_PIN_SET);
 	HAL_TIM_Base_Start_IT(&htim3);
 }
@@ -134,11 +152,11 @@ void displayFaultStatus(faults_t faults)
 		HAL_GPIO_WritePin(FLT_NR_STATUS_GROUP, FLT_NR_STATUS_PIN, GPIO_PIN_SET);
 	else
 		HAL_GPIO_WritePin(FLT_NR_STATUS_GROUP, FLT_NR_STATUS_PIN, GPIO_PIN_RESET);
-
+	/*
 	if (faults.flt_fault) // FLT
 		HAL_GPIO_WritePin(FLT_STATUS_GROUP, FLT_STATUS_PIN, GPIO_PIN_SET);
 	else
-		HAL_GPIO_WritePin(FLT_STATUS_GROUP, FLT_STATUS_PIN, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(FLT_STATUS_GROUP, FLT_STATUS_PIN, GPIO_PIN_RESET);*/
 
 	if (faults.interlock_in_fault) // Interlock In
 		HAL_GPIO_WritePin(INTERLOCK_IN_STATUS_GROUP, INTERLOCK_IN_STATUS_PIN, GPIO_PIN_SET);
@@ -174,7 +192,7 @@ void assertFLT()
 void assertFLT_NR()
 {
 	// Asserts the FLT_NR line low
-	//HAL_GPIO_WritePin(FLT_NR_GROUP, FLT_NR_PIN, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(FLT_NR_GROUP, FLT_NR_PIN, GPIO_PIN_SET);
 }
 
 int IMDFaulted()
