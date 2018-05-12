@@ -1,7 +1,7 @@
 #include "Shutdown.h"
 
 // Global Variables
-
+int state;
 int core_timeout_counter;
 // reset every time core board heartbeat received
 // counts down to zero, then fault_nr asserted
@@ -10,6 +10,7 @@ void init() {
 	resetAllFaults();
 	HAL_GPIO_WritePin(FLT_GROUP, FLT_PIN, GPIO_PIN_RESET);
 	core_timeout_counter = CORE_BOARD_HEARTBEAT_TIMEOUT;
+	state = STATE_GRACE;
 }
 
 void mainloop()
@@ -17,6 +18,17 @@ void mainloop()
 	if(core_timeout_counter <= 0) {
 		assertFLT_NR();
 	}
+	if(HAL_GetTick() > STARTUP_GRACE_PERIOD) {
+		if(state == STATE_GRACE)
+			state = STATE_IMD_GRACE;
+		if(HAL_GetTick() > IMD_GRACE_PERIOD) {
+			if(state == STATE_IMD_GRACE) {
+				resetAllFaults();
+				state = STATE_RUN;
+			}
+		}
+	}
+
 	faults_t faults = checkFaults();			// Check for faults
 	displayFaultStatus(faults);	// Display fault status on LEDS
 
@@ -32,19 +44,22 @@ void mainloop()
 	CAN_short_msg(&can_msg, create_ID(BID_SHUTDOWN, MID_FAULT_STATUS), msg);
 	CAN_queue_transmit(&can_msg);
 
-	if (faults.lv_battery_fault || faults.interlock_in_fault || faults.imd_fault
-		|| faults.ams_fault || faults.bspd_fault) {
+	if ((faults.lv_battery_fault || faults.interlock_in_fault || faults.ams_fault || faults.bspd_fault) && state != STATE_GRACE) {
 		assertFLT_NR();
 	}
 
-	if (faults.flt_nr_fault) {
+	if (faults.imd_fault && state == STATE_RUN) {
+		assertFLT_NR();
+	}
+
+	if (faults.flt_nr_fault && state != STATE_GRACE) {
 		can_msg_t fault_msg;
 		CAN_short_msg(&fault_msg, create_ID(BID_SHUTDOWN, MID_FAULT_NR), 0);
 		CAN_queue_transmit(&fault_msg);
 		assertFLT_NR();
 	}
 
-	if (faults.flt_fault) {
+	if (faults.flt_fault && state != STATE_GRACE) {
 		can_msg_t fault_msg;
 		CAN_short_msg(&fault_msg, create_ID(BID_SHUTDOWN, MID_FAULT), 0);
 		CAN_queue_transmit(&fault_msg);
@@ -55,25 +70,13 @@ void mainloop()
 faults_t checkFaults()
 {
 	faults_t faults;
-	if (HAL_GetTick() > STARTUP_GRACE_PERIOD){
-		faults.lv_battery_fault = 0; // <- For Testing (uint16_t) LVBatteryFaulted();
-		faults.interlock_in_fault = 	((uint16_t) Interlock_InFaulted());
-		faults.flt_fault = 				((uint16_t) FLTFaulted());
-		faults.flt_nr_fault = 			((uint16_t) FLT_NRFaulted());
-		faults.imd_fault = 				((uint16_t) IMDFaulted());
-		faults.ams_fault = 				((uint16_t) AMSFaulted());
-		faults.bspd_fault = 			((uint16_t) BSPDFaulted());
-	}
-	else
-	{
-		faults.lv_battery_fault = 0;
-		faults.interlock_in_fault = 0;
-		faults.flt_fault = 0;
-		faults.flt_nr_fault = 0;
-		faults.imd_fault = 0;
-		faults.ams_fault = 0;
-		faults.bspd_fault = 0;
-	}
+	faults.lv_battery_fault = 0; // <- For Testing (uint16_t) LVBatteryFaulted();
+	faults.interlock_in_fault = 	((uint16_t) Interlock_InFaulted());
+	faults.flt_fault = 				((uint16_t) FLTFaulted());
+	faults.flt_nr_fault = 			((uint16_t) FLT_NRFaulted());
+	faults.imd_fault = 				((uint16_t) IMDFaulted());
+	faults.ams_fault = 				((uint16_t) AMSFaulted());
+	faults.bspd_fault = 			((uint16_t) BSPDFaulted());
 	return faults;
 }
 
@@ -109,9 +112,11 @@ void checkCANMessages()
 
 void sendHeartbeat()
 {
-	can_msg_t msg;
-	CAN_short_msg(&msg, create_ID(BID_SHUTDOWN, MID_HEARTBEAT), 0);
-	CAN_queue_transmit(&msg);
+	if(state == STATE_RUN) {
+		can_msg_t msg;
+		CAN_short_msg(&msg, create_ID(BID_SHUTDOWN, MID_HEARTBEAT), 0);
+		CAN_queue_transmit(&msg);
+	}
 }
 
 void resetFault()

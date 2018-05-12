@@ -59,10 +59,16 @@
 #define LV_BATTERY_THRESHOLD		3
 
 #define STARTUP_GRACE_PERIOD		1000
+#define IMD_GRACE_PERIOD			4000
+
+#define STATE_GRACE		0
+#define STATE_IMD_GRACE 1
+#define STATE_RUN 		2
 
 //# of cycles without heartbeat to trigger fault if no core board heartbeat
 //TODO: test to verify this number
 #define CORE_BOARD_HEARTBEAT_TIMEOUT 2000
+
 
 // Fault status struct
 typedef struct faults_t {
