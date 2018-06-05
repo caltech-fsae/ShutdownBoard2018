@@ -3,6 +3,7 @@
 // Global Variables
 int state;
 int core_timeout_counter;
+int last_state_change_time;
 // reset every time core board heartbeat received
 // counts down to zero, then fault_nr asserted
 
@@ -10,23 +11,43 @@ void init() {
 	resetAllFaults();
 	HAL_GPIO_WritePin(FLT_GROUP, FLT_PIN, GPIO_PIN_RESET);
 	core_timeout_counter = CORE_BOARD_HEARTBEAT_TIMEOUT;
-	state = STATE_GRACE;
+	last_state_change_time = 0;
+	state = STATE_STARTUP_GRACE;
 }
 
-void mainloop()
-{
+void setState(int new_state) {
+	state = new_state;
+	last_state_change_time = HAL_GetTick();
+}
+
+void mainloop() {
+	int current_time = HAL_GetTick();
+
 	if(core_timeout_counter <= 0) {
-		assertFLT_NR();
+		//assertFLT_NR();
 	}
-	if(HAL_GetTick() > STARTUP_GRACE_PERIOD) {
-		if(state == STATE_GRACE)
-			state = STATE_IMD_GRACE;
-		if(HAL_GetTick() > IMD_GRACE_PERIOD) {
-			if(state == STATE_IMD_GRACE) {
-				resetAllFaults();
-				state = STATE_RUN;
-			}
+	switch(state) {
+	case STATE_STARTUP_GRACE:
+		if(current_time - last_state_change_time > STARTUP_GRACE_PERIOD)
+			setState(STATE_IMD_GRACE);
+		break;
+	case STATE_IMD_GRACE:
+		if(current_time - last_state_change_time > IMD_GRACE_PERIOD) {
+			resetAllFaults();
+			setState(STATE_RUN);
 		}
+		break;
+	case STATE_DRIVER_RESET_GRACE:
+		if(current_time - last_state_change_time > DRIVER_RESET_GRACE_PERIOD) {
+			resetIfNoFatalFaults();
+			setState(STATE_RUN);
+		}
+		break;
+	case STATE_RUN:
+		// no time-based transitions out of this state
+		break;
+	default:
+		break;
 	}
 
 	faults_t faults = checkFaults();			// Check for faults
@@ -44,7 +65,7 @@ void mainloop()
 	CAN_short_msg(&can_msg, create_ID(BID_SHUTDOWN, MID_FAULT_STATUS), msg);
 	CAN_queue_transmit(&can_msg);
 
-	if ((faults.lv_battery_fault || faults.interlock_in_fault || faults.ams_fault || faults.bspd_fault) && state != STATE_GRACE) {
+	if ((faults.lv_battery_fault || faults.interlock_in_fault || faults.ams_fault || faults.bspd_fault) && state != STATE_STARTUP_GRACE) {
 		assertFLT_NR();
 	}
 
@@ -52,14 +73,14 @@ void mainloop()
 		assertFLT_NR();
 	}
 
-	if (faults.flt_nr_fault && state != STATE_GRACE) {
+	if (faults.flt_nr_fault && state != STATE_STARTUP_GRACE && state != STATE_DRIVER_RESET_GRACE) {
 		can_msg_t fault_msg;
 		CAN_short_msg(&fault_msg, create_ID(BID_SHUTDOWN, MID_FAULT_NR), 0);
 		CAN_queue_transmit(&fault_msg);
 		assertFLT_NR();
 	}
 
-	if (faults.flt_fault && state != STATE_GRACE) {
+	if (faults.flt_fault && state != STATE_STARTUP_GRACE) {
 		can_msg_t fault_msg;
 		CAN_short_msg(&fault_msg, create_ID(BID_SHUTDOWN, MID_FAULT), 0);
 		CAN_queue_transmit(&fault_msg);
@@ -67,8 +88,7 @@ void mainloop()
 	core_timeout_counter--;
 }
 
-faults_t checkFaults()
-{
+faults_t checkFaults() {
 	faults_t faults;
 	faults.lv_battery_fault = 0; // <- For Testing (uint16_t) LVBatteryFaulted();
 	faults.interlock_in_fault = 	((uint16_t) Interlock_InFaulted());
@@ -80,8 +100,7 @@ faults_t checkFaults()
 	return faults;
 }
 
-void checkCANMessages()
-{
+void checkCANMessages() {
 	can_msg_t msg;
 	while(CAN_dequeue_msg(&msg)) {
 		uint16_t type = 0b0000011111110000 & msg.identifier;
@@ -94,8 +113,7 @@ void checkCANMessages()
 				core_timeout_counter = CORE_BOARD_HEARTBEAT_TIMEOUT;
 			}
 		}
-		else if(type == MID_CAR_STATE)
-		{
+		else if(type == MID_CAR_STATE) {
 			uint16_t payload = CAN_decode_short(&msg);
 			if(payload == 4)
 			{
@@ -103,15 +121,16 @@ void checkCANMessages()
 			}
 			else
 			{
-				resetFault();
 				HAL_GPIO_WritePin(FLT_STATUS_GROUP, FLT_STATUS_PIN, GPIO_PIN_RESET);
 			}
+		}
+		else if(type == MID_RESET_FAULTS && board == BID_CORE) {
+			setState(STATE_DRIVER_RESET_GRACE);
 		}
 	}
 }
 
-void sendHeartbeat()
-{
+void sendHeartbeat() {
 	if(state == STATE_RUN) {
 		can_msg_t msg;
 		CAN_short_msg(&msg, create_ID(BID_SHUTDOWN, MID_HEARTBEAT), 0);
@@ -119,17 +138,15 @@ void sendHeartbeat()
 	}
 }
 
-void resetFault()
-{
-	// Reset resettable fault
-	HAL_GPIO_WritePin(FLT_GROUP, FLT_PIN, GPIO_PIN_RESET);
+void resetIfNoFatalFaults() {
+	faults_t faults = checkFaults();
+	if(!(faults.imd_fault || faults.ams_fault || faults.bspd_fault)) {
+		//safe to reset
+		resetAllFaults();
+	}
 }
 
-void resetAllFaults()
-{
-	// Reset resettable faults
-	resetFault();
-	// Reset non-resettable faults
+void resetAllFaults() {
 	HAL_GPIO_WritePin(FLT_NR_GROUP, FLT_NR_PIN, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(INTERLOCK_RESET_GROUP, INTERLOCK_RESET_PIN, GPIO_PIN_SET);
 	HAL_TIM_Base_Start_IT(&htim3);
@@ -163,10 +180,10 @@ void displayFaultStatus(faults_t faults)
 	else
 		HAL_GPIO_WritePin(FLT_STATUS_GROUP, FLT_STATUS_PIN, GPIO_PIN_RESET);*/
 
-	if (faults.interlock_in_fault) // Interlock In
+	//if (faults.interlock_in_fault) // Interlock In
 		HAL_GPIO_WritePin(INTERLOCK_IN_STATUS_GROUP, INTERLOCK_IN_STATUS_PIN, GPIO_PIN_SET);
-	else
-		HAL_GPIO_WritePin(INTERLOCK_IN_STATUS_GROUP, INTERLOCK_IN_STATUS_PIN, GPIO_PIN_RESET);
+	//else
+		//HAL_GPIO_WritePin(INTERLOCK_IN_STATUS_GROUP, INTERLOCK_IN_STATUS_PIN, GPIO_PIN_RESET);
 }
 
 uint16_t ADC1_read()

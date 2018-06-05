@@ -59,11 +59,13 @@
 #define LV_BATTERY_THRESHOLD		3
 
 #define STARTUP_GRACE_PERIOD		1000
+#define DRIVER_RESET_GRACE_PERIOD	1000
 #define IMD_GRACE_PERIOD			4000
 
-#define STATE_GRACE		0
-#define STATE_IMD_GRACE 1
-#define STATE_RUN 		2
+#define STATE_STARTUP_GRACE			0
+#define STATE_IMD_GRACE 			1
+#define STATE_RUN 					2
+#define STATE_DRIVER_RESET_GRACE	3
 
 //# of cycles without heartbeat to trigger fault if no core board heartbeat
 //TODO: test to verify this number
@@ -82,7 +84,8 @@ typedef struct faults_t {
 } faults_t;
 
 // Function Prototypes----------------------------------------
-void resetFault();
+void setState(int);
+void resetIfNoFatalFaults();
 void resetAllFaults();
 void displayFaultStatus(faults_t);
 void assertFLT();
