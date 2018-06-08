@@ -124,8 +124,10 @@ void checkCANMessages() {
 				HAL_GPIO_WritePin(FLT_STATUS_GROUP, FLT_STATUS_PIN, GPIO_PIN_RESET);
 			}
 		}
-		else if(type == MID_RESET_FAULTS && board == BID_CORE) {
-			setState(STATE_DRIVER_RESET_GRACE);
+		else if(type == MID_ATTEMPT_RESET && board == BID_CORE) {
+			if(state != STATE_DRIVER_RESET_GRACE) {
+				setState(STATE_DRIVER_RESET_GRACE);
+			}
 		}
 	}
 }
