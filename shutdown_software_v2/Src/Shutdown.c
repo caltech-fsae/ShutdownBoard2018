@@ -4,6 +4,7 @@
 int state;
 int core_timeout_counter;
 int last_state_change_time;
+int do_reset_flag = 1;
 // reset every time core board heartbeat received
 // counts down to zero, then fault_nr asserted
 
@@ -38,10 +39,18 @@ void mainloop() {
 		}
 		break;
 	case STATE_DRIVER_RESET_GRACE:
+		//HAL_GPIO_WritePin(AMS_STATUS_GROUP, AMS_STATUS_PIN, GPIO_PIN_SET);
 		if(current_time - last_state_change_time > DRIVER_RESET_GRACE_PERIOD) {
-			resetIfNoFatalFaults();
-			setState(STATE_RUN);
+			//HAL_GPIO_WritePin(BSPD_STATUS_GROUP, BSPD_STATUS_PIN, GPIO_PIN_SET);
+			//HAL_GPIO_WritePin(AMS_STATUS_GROUP, AMS_STATUS_PIN, GPIO_PIN_RESET);
+			do_reset_flag ? resetIfNoFatalFaults() : 0;
+			do_reset_flag = 0;
 		}
+		if(current_time - last_state_change_time > DRIVER_RESET_GRACE_PERIOD + EXTRA_RESET_GRACE) {
+			setState(STATE_RUN);
+			do_reset_flag = 1;
+		}
+
 		break;
 	case STATE_RUN:
 		// no time-based transitions out of this state
@@ -67,9 +76,10 @@ void mainloop() {
 
 	if ((faults.lv_battery_fault || faults.interlock_in_fault || faults.ams_fault || faults.bspd_fault) && state != STATE_STARTUP_GRACE) {
 		assertFLT_NR();
+		HAL_GPIO_WritePin(BSPD_STATUS_GROUP, BSPD_STATUS_PIN, GPIO_PIN_SET);
 	}
 
-	if (faults.imd_fault && state == STATE_RUN) {
+	if (faults.imd_fault && (state == STATE_RUN || state == STATE_DRIVER_RESET_GRACE)) {
 		assertFLT_NR();
 	}
 
@@ -133,17 +143,16 @@ void checkCANMessages() {
 }
 
 void sendHeartbeat() {
-	if(state == STATE_RUN) {
 		can_msg_t msg;
 		CAN_short_msg(&msg, create_ID(BID_SHUTDOWN, MID_HEARTBEAT), 0);
 		CAN_queue_transmit(&msg);
-	}
 }
 
 void resetIfNoFatalFaults() {
 	faults_t faults = checkFaults();
 	if(!(faults.imd_fault || faults.ams_fault || faults.bspd_fault)) {
 		//safe to reset
+		HAL_GPIO_WritePin(IMD_STATUS_GROUP, IMD_STATUS_PIN, GPIO_PIN_SET);
 		resetAllFaults();
 	}
 }
@@ -157,6 +166,7 @@ void resetAllFaults() {
 void displayFaultStatus(faults_t faults)
 {
 	/* Sets the LEDs according to the current states of fault lines */
+/*
 	if (faults.imd_fault) // IMD
 		HAL_GPIO_WritePin(IMD_STATUS_GROUP, IMD_STATUS_PIN, GPIO_PIN_SET);
 	else
@@ -171,7 +181,7 @@ void displayFaultStatus(faults_t faults)
 		HAL_GPIO_WritePin(AMS_STATUS_GROUP, AMS_STATUS_PIN, GPIO_PIN_SET);
 	else
 		HAL_GPIO_WritePin(AMS_STATUS_GROUP, AMS_STATUS_PIN, GPIO_PIN_RESET);
-
+*/
 	if (faults.flt_nr_fault) // FLT_NR
 		HAL_GPIO_WritePin(FLT_NR_STATUS_GROUP, FLT_NR_STATUS_PIN, GPIO_PIN_SET);
 	else
