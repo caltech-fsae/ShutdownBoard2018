@@ -8,6 +8,8 @@
 #include "identifiers.h"
 #include "mycan.h"
 
+#define MAIN_LOOP_FREQ 500
+
 #define AMS_STATUS_PIN              GPIO_PIN_1
 #define AMS_STATUS_GROUP            GPIOA
 
@@ -60,7 +62,7 @@
 
 #define STARTUP_GRACE_PERIOD		1000
 #define EXTRA_RESET_GRACE			100
-#define DRIVER_RESET_GRACE_PERIOD	1000
+#define DRIVER_RESET_GRACE_PERIOD	500
 #define IMD_GRACE_PERIOD			4000
 
 #define STATE_STARTUP_GRACE			0
@@ -70,7 +72,7 @@
 
 //# of cycles without heartbeat to trigger fault if no core board heartbeat
 //TODO: test to verify this number
-#define CORE_BOARD_HEARTBEAT_TIMEOUT 2000
+#define CORE_BOARD_HEARTBEAT_TIMEOUT 10000
 
 
 // Fault status struct
@@ -105,5 +107,7 @@ void mainloop();
 faults_t checkFaults();
 void checkCANMessages();
 void sendHeartbeat();
+
+int reset_consent[4]; //bms mc io core
 
 #endif // SHUTDOWN_H_

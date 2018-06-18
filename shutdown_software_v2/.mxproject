@@ -1,7 +1,7 @@
 [PreviousGenFiles]
-HeaderPath=C:/Users/david/Documents/GitHub/ShutdownBoard2018/shutdown_software_v2/Inc
+HeaderPath=C:/Users/bgber/FSAE/ShutdownBoard2018/shutdown_software_v2/Inc
 HeaderFiles=gpio.h;adc.h;can.h;tim.h;stm32f4xx_it.h;stm32f4xx_hal_conf.h;main.h;
-SourcePath=C:/Users/david/Documents/GitHub/ShutdownBoard2018/shutdown_software_v2/Src
+SourcePath=C:/Users/bgber/FSAE/ShutdownBoard2018/shutdown_software_v2/Src
 SourceFiles=gpio.c;adc.c;can.c;tim.c;stm32f4xx_it.c;stm32f4xx_hal_msp.c;main.c;
 
 [PreviousLibFiles]

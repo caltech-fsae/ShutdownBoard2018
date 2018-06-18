@@ -5,6 +5,8 @@ int state;
 int core_timeout_counter;
 int last_state_change_time;
 int do_reset_flag = 1;
+int can_nr = 0;
+int ttm = 0;
 // reset every time core board heartbeat received
 // counts down to zero, then fault_nr asserted
 
@@ -25,7 +27,7 @@ void mainloop() {
 	int current_time = HAL_GetTick();
 
 	if(core_timeout_counter <= 0) {
-		//assertFLT_NR();
+		assertFLT_NR();
 	}
 	switch(state) {
 	case STATE_STARTUP_GRACE:
@@ -43,9 +45,16 @@ void mainloop() {
 		if(current_time - last_state_change_time > DRIVER_RESET_GRACE_PERIOD) {
 			//HAL_GPIO_WritePin(BSPD_STATUS_GROUP, BSPD_STATUS_PIN, GPIO_PIN_SET);
 			//HAL_GPIO_WritePin(AMS_STATUS_GROUP, AMS_STATUS_PIN, GPIO_PIN_RESET);
-			do_reset_flag ? resetIfNoFatalFaults() : 0;
-			do_reset_flag = 0;
+			if(reset_consent[0] && /*reset_consent[1] && */reset_consent[2] && reset_consent[3]) {
+				do_reset_flag ? resetIfNoFatalFaults() : 0;
+				do_reset_flag = 0;
+			} else {
+				setState(STATE_RUN);
+			}
 		}
+		can_msg_t can_msg;
+		CAN_short_msg(&can_msg, create_ID(BID_SHUTDOWN, MID_REQUEST_NR_RESET_CONSENT), 0);
+		CAN_queue_transmit(&can_msg);
 		if(current_time - last_state_change_time > DRIVER_RESET_GRACE_PERIOD + EXTRA_RESET_GRACE) {
 			setState(STATE_RUN);
 			do_reset_flag = 1;
@@ -75,11 +84,17 @@ void mainloop() {
 	CAN_queue_transmit(&can_msg);
 
 	if ((faults.lv_battery_fault || faults.interlock_in_fault || faults.ams_fault || faults.bspd_fault) && state != STATE_STARTUP_GRACE) {
+		can_msg_t fault_msg;
+		CAN_short_msg(&fault_msg, create_ID(BID_SHUTDOWN, MID_FAULT_NR), 0);
+		CAN_queue_transmit(&fault_msg);
 		assertFLT_NR();
 		HAL_GPIO_WritePin(BSPD_STATUS_GROUP, BSPD_STATUS_PIN, GPIO_PIN_SET);
 	}
 
 	if (faults.imd_fault && (state == STATE_RUN || state == STATE_DRIVER_RESET_GRACE)) {
+		can_msg_t fault_msg;
+		CAN_short_msg(&fault_msg, create_ID(BID_SHUTDOWN, MID_FAULT_NR), 0);
+		CAN_queue_transmit(&fault_msg);
 		assertFLT_NR();
 	}
 
@@ -89,12 +104,6 @@ void mainloop() {
 		CAN_queue_transmit(&fault_msg);
 		assertFLT_NR();
 	}
-
-	if (faults.flt_fault && state != STATE_STARTUP_GRACE) {
-		can_msg_t fault_msg;
-		CAN_short_msg(&fault_msg, create_ID(BID_SHUTDOWN, MID_FAULT), 0);
-		CAN_queue_transmit(&fault_msg);
-	}
 	core_timeout_counter--;
 }
 
@@ -103,7 +112,7 @@ faults_t checkFaults() {
 	faults.lv_battery_fault = 0; // <- For Testing (uint16_t) LVBatteryFaulted();
 	faults.interlock_in_fault = 	((uint16_t) Interlock_InFaulted());
 	faults.flt_fault = 				((uint16_t) FLTFaulted());
-	faults.flt_nr_fault = 			((uint16_t) FLT_NRFaulted());
+	faults.flt_nr_fault = 			((uint16_t) FLT_NRFaulted()) || can_nr;
 	faults.imd_fault = 				((uint16_t) IMDFaulted());
 	faults.ams_fault = 				((uint16_t) AMSFaulted());
 	faults.bspd_fault = 			((uint16_t) BSPDFaulted());
@@ -111,12 +120,30 @@ faults_t checkFaults() {
 }
 
 void checkCANMessages() {
+	if(ttm <= 0) {
+		can_nr = 0;
+		ttm = MAIN_LOOP_FREQ;
+	} else {
+		ttm--;
+	}
 	can_msg_t msg;
 	while(CAN_dequeue_msg(&msg)) {
 		uint16_t type = 0b0000011111110000 & msg.identifier;
 		uint16_t board = 0b00001111 & msg.identifier;
 		if(type == MID_FAULT_NR) {
-			assertFLT_NR();
+			if(board < 3) {
+				reset_consent[board] = 0;
+			} else {
+				reset_consent[board - 1] = 0;
+			}
+			can_nr = 1;
+		}
+		else if(type == MID_PROVIDE_NR_RESET_CONSENT) {
+			if(board < 3) {
+				reset_consent[board] = 1;
+			} else {
+				reset_consent[board - 1] = 1;
+			}
 		}
 		else if(type == MID_HEARTBEAT) {
 			if(board == BID_CORE) {
@@ -136,6 +163,10 @@ void checkCANMessages() {
 		}
 		else if(type == MID_ATTEMPT_RESET && board == BID_CORE) {
 			if(state != STATE_DRIVER_RESET_GRACE) {
+				reset_consent[0] = 0;
+				reset_consent[1] = 0;
+				reset_consent[2] = 0;
+				reset_consent[3] = 0;
 				setState(STATE_DRIVER_RESET_GRACE);
 			}
 		}
